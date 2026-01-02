@@ -1,4 +1,8 @@
 import ToDo from "../models/todoModels.js";
+import { ZodError } from "zod";
+import { createTodoSchema } from "../validators/todoSchema.js";
+
+
 
 export const getALL = async(req,res)=>{
     try{
@@ -26,6 +30,9 @@ export const getList = async(req,res)=>{
 
 export const createList = async(req,res)=>{
     try{
+              
+        createTodoSchema.parse(req.body)
+
          const {title,description} = req.body;
     const newToDo = new ToDo({
         user: req.user._id,
@@ -34,8 +41,12 @@ export const createList = async(req,res)=>{
         completed : false
     })
     await newToDo.save();
-    res.status(201).json({message:"new todolist has been created successfully", list: newToDo})
+    res.status(201).json({success: true ,message:"new todolist has been created successfully", toDo: newToDo})
     }catch(err){
+
+        if(err instanceof ZodError){
+             return res.status(400).json({ message: err.errors[0].message });
+        }
         console.log(err);
         res.status(500).send("internal server error");
     }

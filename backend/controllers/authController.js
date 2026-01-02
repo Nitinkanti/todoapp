@@ -1,15 +1,17 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt"; 
+import { loginSchema, signupSchema } from "../validators/authSchema.js";
+import { ZodError } from "zod";
+
 
 
 export const signUp = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: "Please fill all credentials" });
-    }
+    signupSchema.parse(req.body) 
+
+    const { name, email, password } = req.body;
 
     const alreadyExists = await User.findOne({ email });
     if (alreadyExists) {
@@ -35,6 +37,10 @@ export const signUp = async (req, res) => {
       token,
     });
   } catch (err) {
+       if(err instanceof ZodError){
+         const message = err.errors?.[0]?.message || "Invalid input";
+        return res.status(400).json({message})
+       }
     console.log(err);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
@@ -43,6 +49,8 @@ export const signUp = async (req, res) => {
 
 export const logIn = async (req, res) => {
   try {
+
+    loginSchema.parse(req.body)
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
@@ -73,6 +81,11 @@ export const logIn = async (req, res) => {
       token,
     });
   } catch (err) {
+               
+               if(err instanceof ZodError){
+                 const message = err.errors?.[0]?.message || "Invalid input";
+                    return res.status(400).json({message})
+               }
     console.log('LOGIN ERROR:', err.message);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
